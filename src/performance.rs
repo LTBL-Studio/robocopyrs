@@ -1,111 +1,64 @@
 //! Performance options
 
-use std::{convert::TryInto, ffi::OsString, ops::Add};
-
-use crate::MultipleVariant;
+use std::ffi::OsString;
 
 /// Only one Performance choice can be chosen
 #[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum PerformanceChoice {
-    Threads(u8), // max 128
-    InterPacketGap(usize), // todo max
-    Default, // Threads thread, how many (case None = default) or how big the gap
-            // when adding this variant implies usage of the other variant
+    /// Creates multi-threaded copies with `n` threads. `n` must be an integer between 1 and 128. The default value for `n` is 8.
+    /// 
+    /// Corresponds to `/mt` option.
+    Threads(Option<u8>), // max 128
+    /// Specifies the inter-packet gap to free bandwidth on slow lines.
+    /// 
+    /// Corresponds to `/ipg` option.
+    InterPacketGap(usize)
 }
 
-impl PerformanceChoice {
-    fn as_os_string(&self) -> Option<OsString> {
-        match self {
-            Self::Threads(threads) => Some(OsString::from(format!("/MT:{}", threads))),
-            Self::InterPacketGap(gap) => Some(OsString::from(format!("/ipg:{}", gap))),
-            _ => None
+impl From<PerformanceChoice> for OsString {
+    fn from(pc: PerformanceChoice) -> Self {
+        (&pc).into()
+    }
+}
+
+impl From<&PerformanceChoice> for OsString {
+    fn from(pc: &PerformanceChoice) -> Self {
+        match pc {
+            PerformanceChoice::Threads(threads) => OsString::from(format!("/mt:{}", threads.map(|n| n.clamp(1, 128)).unwrap_or(8))),
+            PerformanceChoice::InterPacketGap(gap) => OsString::from(format!("/ipg:{}", gap))
         }
     }
 }
 
-#[allow(non_camel_case_types)]
+/// Enable performance options
 #[derive(Debug, Copy, Clone)]
-pub enum PerformanceOptions {
-    PerformanceChoiceOnly(PerformanceChoice),
-    
-    DONT_OFFLOAD(PerformanceChoice),
-    REQUEST_NETWORK_COMPRESSION(PerformanceChoice),
-    COPY_RATHER_THAN_FOLLOW_LINK(PerformanceChoice),
+pub struct PerformanceOptions {
+    /// Enables multithreading or inter-packet gap
+    performance_choice: Option<PerformanceChoice>,
 
-    _MULTIPLE([bool; 3], PerformanceChoice),
-    
-    Default // Default Threads only
-}
-
-impl Add for PerformanceOptions {
-    type Output = Result<Self, &'static str>;
-    
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut perf_choice ;
-
-        let mut result_filters = match self {
-            Self::_MULTIPLE(filters, choice) => {
-                perf_choice = choice;
-                filters
-            },
-            filter => {
-                perf_choice = filter.performance_choice();
-                if let Some(index) = filter.index_of() {
-                    let mut val = 2_u8.pow(index as u32) + 2_u8; 
-                    (0..6).map(|_| { val >>= 1; val == 1 }).collect::<Vec<bool>>().try_into().unwrap()    
-                } else {
-                    [false; 3]
-                }
-            }
-        };
-
-        match rhs {
-            Self::_MULTIPLE(filters, choice) => {
-                if choice != perf_choice {
-                    if perf_choice == PerformanceChoice::Default {
-                        perf_choice = choice;
-                    } else if choice != PerformanceChoice::Default {
-                        return Err("Performance choices do not match.");
-                    }
-                }
-                result_filters = result_filters.iter().zip(filters.iter()).map(|(a, b)| *a && *b).collect::<Vec<bool>>().try_into().unwrap()
-            },
-            filter => {
-                let rhs_perf_choice = filter.performance_choice();
-                
-                if rhs_perf_choice != perf_choice {
-                    if perf_choice == PerformanceChoice::Default {
-                        perf_choice = rhs_perf_choice;
-                    } else if rhs_perf_choice != PerformanceChoice::Default {
-                        return Err("Performance choices do not match.");
-                    }
-                }
-
-                if let Some(index) = filter.index_of() {
-                    result_filters[index] = true; 
-                }
-            }
-        }
-
-        Ok(Self::_MULTIPLE(result_filters, perf_choice))
-    }
+    /// Copies files without using the Windows Copy Offload mechanism.
+    /// 
+    /// Corresponds to `/nooffload` option.
+    dont_offload: bool,
+    /// Requests network compression during file transfer, if applicable.
+    /// 
+    /// Corresponds to `/compress` option.
+    request_network_compression: bool,
+    /// Don't follow symbolic links and instead create a copy of the link.
+    /// 
+    /// Corresponds to `/sl` option.
+    copy_rather_than_follow_link: bool,
 }
 
 impl From<&PerformanceOptions> for Vec<OsString> {
     fn from(po: &PerformanceOptions) -> Self {
-        let mut res = match po.performance_choice().as_os_string() {
-            Some(os_string) => vec![os_string],
-            None => Vec::new()
-        };
+        let mut res: Vec<OsString> = Vec::new();
 
-        po.single_variants().iter().for_each(|filter| match filter {
-            PerformanceOptions::DONT_OFFLOAD(_) => res.push(OsString::from("/nooffload")),
-            PerformanceOptions::REQUEST_NETWORK_COMPRESSION(_) => res.push(OsString::from("/compress")),
-            PerformanceOptions::COPY_RATHER_THAN_FOLLOW_LINK(_) => res.push(OsString::from("/sl")),
-            PerformanceOptions::PerformanceChoiceOnly(_) | PerformanceOptions::Default => (),
-            _ => unreachable!()
-        });
+        if let Some(choice) = po.performance_choice {res.push(choice.into())}
+        if po.dont_offload {res.push("/nooffload".into())}
+        if po.request_network_compression {res.push("/compress".into())}
+        if po.copy_rather_than_follow_link {res.push("/sl".into())}
 
         res
     }
@@ -116,51 +69,24 @@ impl From<PerformanceOptions> for Vec<OsString> {
     }
 }
 
-impl MultipleVariant for PerformanceOptions {
-    fn single_variants(&self) -> Vec<Self> {
-        match self {
-            Self::_MULTIPLE(filters, choice) => {
-                let variants: [Self; 3] = [
-                    Self::DONT_OFFLOAD(*choice),
-                    Self::REQUEST_NETWORK_COMPRESSION(*choice),
-                    Self::COPY_RATHER_THAN_FOLLOW_LINK(*choice),
-                ];
-
-                variants.iter().zip(filters.iter()).filter(|(_, exists)| **exists).unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
-            },
-            attrib => vec![*attrib],
-        }
-    }
-}
-
-impl PerformanceOptions {
-    fn index_of(&self) -> Option<usize>{
-        match self {
-            Self::DONT_OFFLOAD(_) => Some(0),
-            Self::REQUEST_NETWORK_COMPRESSION(_) => Some(1),
-            Self::COPY_RATHER_THAN_FOLLOW_LINK(_) => Some(2),
-            _ => None,
-        }
-    }
-
-    pub fn performance_choice(&self) -> PerformanceChoice {
-        match self {
-            Self::PerformanceChoiceOnly(choice) | 
-            Self::DONT_OFFLOAD(choice) | 
-            Self::REQUEST_NETWORK_COMPRESSION(choice) |
-            Self::COPY_RATHER_THAN_FOLLOW_LINK(choice) |
-            Self::_MULTIPLE(_, choice) => *choice,
-            Self::Default => PerformanceChoice::Default
-        }
-    }
-}
-
+/// A struct containing retry options
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RetrySettings {
-    pub specify_retries_failed_copies: Option<usize>, // default 1 million set in registry
-    pub specify_wait_between_retries: Option<usize>, // default 30 seconds set in registry
+    /// Specifies the number of retries on failed copies. The default value of n is 1,000,000 (one million retries).
+    /// 
+    /// Corresponds to `/r` option.
+    pub specify_retries_failed_copies: Option<Option<usize>>,
+    /// Specifies the wait time between retries, in seconds. The default value of n is 30 (wait time 30 seconds).
+    /// 
+    /// Corresponds to `/w` option.
+    pub specify_wait_between_retries: Option<Option<usize>>,
+    /// Saves the values specified in the /r and /w options as default settings in the registry.
+    /// 
+    /// Corresponds to `/reg` option.
     pub save_specifications: bool,
-    
+    /// Specifies that the system waits for share names to be defined (retry error 67).
+    /// 
+    /// Corresponds to `/tbd` option.
     pub await_share_names_def: bool,
 }
 
@@ -169,10 +95,22 @@ impl From<&RetrySettings> for Vec<OsString> {
         let mut result = Vec::new();
 
         if let Some(specified) = rs.specify_retries_failed_copies {
-            result.push(OsString::from(format!("/r:{}", specified)))
+            result.push(OsString::from(
+                if let Some(n) = specified {
+                    format!("/r:{n}")
+                } else {
+                    "/r:".to_owned()
+                }
+            ))
         }
         if let Some(specified) = rs.specify_wait_between_retries {
-            result.push(OsString::from(format!("/w:{}", specified)))
+            result.push(OsString::from(
+                if let Some(n) = specified {
+                    format!("/w:{n}")
+                } else {
+                    "/w:".to_owned()
+                }
+            ))
         }
         if rs.save_specifications {
             result.push(OsString::from("/reg"))

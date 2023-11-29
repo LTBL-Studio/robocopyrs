@@ -32,7 +32,7 @@ impl From<&PerformanceChoice> for OsString {
 }
 
 /// Enable performance options
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct PerformanceOptions {
     /// Enables multithreading or inter-packet gap
     pub performance_choice: Option<PerformanceChoice>,

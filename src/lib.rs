@@ -29,7 +29,7 @@ use std::{convert::{TryFrom, TryInto}, ffi::OsString, ops::Add, path::Path, proc
 use exit_codes::{ErrExitCode, OkExitCode};
 use filter::Filter;
 use performance::{PerformanceOptions, RetrySettings};
-use logging::LoggingSettings;
+use logging::LoggingOptions;
 
 /// For enums that allow for multiple variants to be 
 /// joined into a single variant
@@ -522,7 +522,7 @@ pub struct RobocopyCommand<'a> {
     pub performance_options: Option<PerformanceOptions>,
     pub retry_settings: Option<RetrySettings>,
     
-    pub logging: Option<LoggingSettings<'a>>,
+    pub logging: Option<LoggingOptions<'a>>,
     
     pub mv: Option<Move>,
     pub post_copy_actions: Option<PostCopyActions>,
@@ -623,7 +623,7 @@ impl<'a> RobocopyCommand<'a> {
         }
 
         if let Some(logging) = &self.logging {
-            command.arg(Into::<OsString>::into(logging));
+            Into::<Vec<OsString>>::into(logging).into_iter().for_each(|arg| {command.arg(arg);});
         }
 
         if let Some(mv) = &self.mv {

@@ -35,20 +35,20 @@ impl From<&PerformanceChoice> for OsString {
 #[derive(Debug, Copy, Clone)]
 pub struct PerformanceOptions {
     /// Enables multithreading or inter-packet gap
-    performance_choice: Option<PerformanceChoice>,
+    pub performance_choice: Option<PerformanceChoice>,
 
     /// Copies files without using the Windows Copy Offload mechanism.
     /// 
     /// Corresponds to `/nooffload` option.
-    dont_offload: bool,
+    pub dont_offload: bool,
     /// Requests network compression during file transfer, if applicable.
     /// 
     /// Corresponds to `/compress` option.
-    request_network_compression: bool,
+    pub request_network_compression: bool,
     /// Don't follow symbolic links and instead create a copy of the link.
     /// 
     /// Corresponds to `/sl` option.
-    copy_rather_than_follow_link: bool,
+    pub copy_rather_than_follow_link: bool,
 }
 
 impl From<&PerformanceOptions> for Vec<OsString> {

@@ -21,69 +21,69 @@ pub struct LoggingOptions<'a> {
     /// Specifies that files are to be listed only (and not copied, deleted, or time stamped).
     /// 
     /// Corresponds to `/l` option.
-    only_log: bool,
+    pub only_log: bool,
     /// Reports all extra files, not just the ones that are selected.
     /// 
     /// Corresponds to `/x` option.
-    report_extra: bool,
+    pub report_extra: bool,
     /// Produces verbose output, and shows all skipped files.
     /// 
     /// Corresponds to `/v` option.
-    verbose: bool,
+    pub verbose: bool,
     /// Includes source file time stamps in the output.
     /// 
     /// Corresponds to `/ts` option.
-    time_stamps: bool,
+    pub time_stamps: bool,
     /// Includes the full path names of the files in the output.
     /// 
     /// Corresponds to `/fp` option.
-    full_path_names: bool,
+    pub full_path_names: bool,
     /// Prints sizes as bytes.
     /// 
     ///  Corresponds to `/bytes` option.
-    sizes_bytes: bool,
+    pub sizes_bytes: bool,
     /// Specifies that file sizes are not to be logged.
     /// 
     /// Corresponds to `/ns` option.
-    dont_log_size: bool,
+    pub dont_log_size: bool,
     /// Specifies that file classes are not to be logged.
     /// 
     /// Corresponds to `/nc` option.
-    dont_log_class: bool,
+    pub dont_log_class: bool,
     /// Specifies that file names are not to be logged.
     /// 
     /// Corresponds to `/nfl` option.
-    dont_log_file_names: bool,
+    pub dont_log_file_names: bool,
     /// Specifies that directory names are not to be logged.
     /// 
     /// Corresponds to `/ndl` option.
-    dont_log_dir_names: bool,
+    pub dont_log_dir_names: bool,
     /// Specifies that the progress of the copying operation (the number of files or directories copied so far) won't be displayed.
     /// 
     /// Corresponds to `/np` option.
-    no_progress_display: bool,
+    pub no_progress_display: bool,
     /// Shows the estimated time of arrival (ETA) of the copied files.
     /// 
     /// Corresponds to `/eta` option.
-    show_estimated_time_of_arrival: bool,
+    pub show_estimated_time_of_arrival: bool,
     /// Write the status output to a log file.
-    log_file: Option<LogFileSettings<'a>>,
+    pub log_file: Option<LogFileSettings<'a>>,
     /// Writes the status output to the console window, and to the log file.
     /// 
     /// Corresponds to `/tee` option.
-    combination_log: bool,
+    pub combination_log: bool,
     /// Specifies that there's no job header.
     /// 
     /// Corresponds to `/njh` option.
-    dont_log_header: bool,
+    pub dont_log_header: bool,
     /// Specifies that there's no job summary.
     /// 
     /// Corresponds to `/njs` option.
-    dont_log_summary: bool,
+    pub dont_log_summary: bool,
     /// Displays the status output as unicode text.
     /// 
     /// Corresponds to `/unicode` option.
-    unicode: bool
+    pub unicode: bool
 }
 
 impl<'a> From<&'a LogFileSettings<'a>> for OsString {

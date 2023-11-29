@@ -237,7 +237,7 @@ impl MultipleVariant for FileAndDirectoryExclusionFilter {
     fn single_variants(&self) -> Vec<Self> {
         match self {
             Self::_MULTIPLE(filters) => {
-                Self::VARIANTS.iter().zip(filters.iter()).filter(|(_, exists)| **exists).into_iter().unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
+                Self::VARIANTS.iter().zip(filters.iter()).filter(|(_, exists)| **exists).unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
             },
             attrib => vec![*attrib],
         }
@@ -314,7 +314,7 @@ impl MultipleVariant for FileExclusionFilterException {
     fn single_variants(&self) -> Vec<Self> {
         match self {
             Self::_MULTIPLE(filters) => {
-                Self::VARIANTS.iter().zip(filters.iter()).filter(|(_, exists)| **exists).into_iter().unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
+                Self::VARIANTS.iter().zip(filters.iter()).filter(|(_, exists)| **exists).unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
             },
             attrib => vec![*attrib],
         }

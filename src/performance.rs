@@ -126,7 +126,7 @@ impl MultipleVariant for PerformanceOptions {
                     Self::COPY_RATHER_THAN_FOLLOW_LINK(*choice),
                 ];
 
-                variants.iter().zip(filters.iter()).filter(|(_, exists)| **exists).into_iter().unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
+                variants.iter().zip(filters.iter()).filter(|(_, exists)| **exists).unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
             },
             attrib => vec![*attrib],
         }

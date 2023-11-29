@@ -85,7 +85,7 @@ impl From<&FileProperties> for OsString {
             FileProperties::OWNER_INFO => "/copy:O",
             FileProperties::AUDITING_INFO => "/copy:U",
             FileProperties::_MULTIPLE(props) => {
-                let part = ['D', 'A', 'T', 'S', 'O', 'U'].iter().zip(props.iter()).filter(|(_, exists)| **exists).into_iter().unzip::<&char, &bool, String, Vec<bool>>().0;
+                let part = ['D', 'A', 'T', 'S', 'O', 'U'].iter().zip(props.iter()).filter(|(_, exists)| **exists).unzip::<&char, &bool, String, Vec<bool>>().0;
                 full = String::from("/copy:") + part.as_str();
                 full.as_str()
             }
@@ -102,7 +102,7 @@ impl MultipleVariant for FileProperties {
     fn single_variants(&self) -> Vec<Self> {
         match self {
             Self::_MULTIPLE(props) => {
-                Self::VARIANTS.iter().zip(props.iter()).filter(|(_, exists)| **exists).into_iter().unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
+                Self::VARIANTS.iter().zip(props.iter()).filter(|(_, exists)| **exists).unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
             },
             prop => vec![*prop],
         }
@@ -186,7 +186,7 @@ impl From<&DirectoryProperties> for OsString {
             DirectoryProperties::ATTRIBUTES => "/dcopy:A",
             DirectoryProperties::TIME_STAMPS => "/dcopy:T",
             DirectoryProperties::_MULTIPLE(props) => {
-                let part = ['D', 'A', 'T'].iter().zip(props.iter()).filter(|(_, exists)| **exists).into_iter().unzip::<&char, &bool, String, Vec<bool>>().0;
+                let part = ['D', 'A', 'T'].iter().zip(props.iter()).filter(|(_, exists)| **exists).unzip::<&char, &bool, String, Vec<bool>>().0;
                 full = String::from("/dcopy:") + part.as_str();
                 full.as_str()
             }
@@ -203,7 +203,7 @@ impl MultipleVariant for DirectoryProperties {
     fn single_variants(&self) -> Vec<Self> {
         match self {
             Self::_MULTIPLE(props) => {
-                Self::VARIANTS.iter().zip(props.iter()).filter(|(_, exists)| **exists).into_iter().unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
+                Self::VARIANTS.iter().zip(props.iter()).filter(|(_, exists)| **exists).unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
             },
             prop => vec![*prop],
         }
@@ -289,7 +289,7 @@ impl From<&FileAttributes> for OsString {
             FileAttributes::ENCRYPTED => "E",
             FileAttributes::TEMPORARY => "T",
             FileAttributes::_MULTIPLE(props) => {
-                part = ['R', 'A', 'S', 'H', 'C', 'N', 'E', 'T'].iter().zip(props.iter()).filter(|(_, exists)| **exists).into_iter().unzip::<&char, &bool, String, Vec<bool>>().0;
+                part = ['R', 'A', 'S', 'H', 'C', 'N', 'E', 'T'].iter().zip(props.iter()).filter(|(_, exists)| **exists).unzip::<&char, &bool, String, Vec<bool>>().0;
                 part.as_str()
             }
         })
@@ -305,7 +305,7 @@ impl MultipleVariant for FileAttributes {
     fn single_variants(&self) -> Vec<Self> {
         match self {
             Self::_MULTIPLE(attribs) => {
-                Self::VARIANTS.iter().zip(attribs.iter()).filter(|(_, exists)| **exists).into_iter().unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
+                Self::VARIANTS.iter().zip(attribs.iter()).filter(|(_, exists)| **exists).unzip::<&Self, &bool, Vec<Self>, Vec<bool>>().0
             },
             attrib => vec![*attrib],
         }

@@ -20,6 +20,7 @@
 //! command.execute()?;
 //! ```
 
+
 pub mod filter;
 pub mod performance;
 pub mod logging;
@@ -39,6 +40,7 @@ pub trait MultipleVariant: Sized + Add<Self> {
 }
 
 /// The file Properties
+/// 
 /// Default is both Data and Attributes
 #[allow(non_camel_case_types)]
 #[derive(Debug, Copy, Clone)]
@@ -146,6 +148,7 @@ impl FileProperties {
 
 
 /// The directory Properties
+/// 
 /// Default is both Data and Attributes
 #[allow(non_camel_case_types)]
 #[derive(Debug, Copy, Clone)]
@@ -351,12 +354,25 @@ impl FileAttributes {
     }
 }
 
-
+/// A copy strategy
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy)]
 pub enum CopyMode {
+    /// Copies files in restartable mode.
+    /// 
+    /// In restartable mode, should a file copy be interrupted, robocopy can pick up where it left off rather than recopying the entire file.
+    /// 
+    /// Corresponds to `/z` option.
     RESTARTABLE_MODE,
+    /// Copies files in backup mode.
+    /// 
+    /// In backup mode, robocopy overrides file and folder permission settings (ACLs), which might otherwise block access.
+    /// 
+    /// Corresponds to `/b` option.
     BACKUP_MODE,
+    /// Copies files in restartable mode. If file access is denied, switches to backup mode.
+    /// 
+    /// Corresponds to `/zb` option.
     RESTARTABLE_MODE_BACKUP_MODE_FALLBACK
 }
 
@@ -375,11 +391,17 @@ impl From<CopyMode> for OsString {
     }
 }
 
-
+/// The move strategy
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy)]
 pub enum Move {
+    /// Moves files, and deletes them from the source after they're copied.
+    /// 
+    /// Corresponds to `/mov` option.
     FILES,
+    /// Moves files and directories, and deletes them from the source after they're copied.
+    /// 
+    /// Corresponds to `/move` option.
     FILES_AND_DIRS,
 }
 
@@ -397,10 +419,16 @@ impl From<Move> for OsString {
     }
 }
 
-
+/// What attributes to add or remove from copied files.
 #[derive(Debug, Copy, Clone)]
 pub enum PostCopyActions {
+    /// Adds the specified attributes to copied files.
+    /// 
+    /// Corresponds to `/a+` option.
     AddAttribsToFiles(FileAttributes),
+    /// Removes the specified attributes from copied files.
+    /// 
+    /// Corresponds to `/a-` option.
     RmvAttribsFromFiles(FileAttributes),
     _MULTIPLE(FileAttributes, FileAttributes)
 }
@@ -469,12 +497,21 @@ impl MultipleVariant for PostCopyActions {
     }
 }
 
-
+/// Specifies file system options
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy)]
 pub enum FilesystemOptions {
+    /// Creates destination files by using 8.3 character-length FAT file names only.
+    /// 
+    /// Corresponds to `/fat` option.
     FAT_FILE_NAMES,
+    /// Assumes FAT file times (two-second precision).
+    /// 
+    /// Corresponds to `/fft` option.
     ASSUME_FAT_FILE_TIMES,
+    /// Turns off support for paths longer than 256 characters.
+    /// 
+    /// Corresponds to `/256` option.
     DISABLE_LONG_PATHS,
     _MULTIPLE([bool; 3])
 }
@@ -500,31 +537,61 @@ impl From<FilesystemOptions> for Vec<OsString> {
 /// 
 #[derive(Debug, Clone)]
 pub struct RobocopyCommand<'a> {
+    /// The source's path
     pub source: &'a Path,
+    /// The destination's path
     pub destination: &'a Path,
-    /// wildcard characters are supported
+    /// Specifies the file or files to be copied. Wildcard characters are supported.
     pub files: Vec<&'a str>,
-    
+    /// Specifies a copy strategy
     pub copy_mode: Option<CopyMode>,
+    /// Copies using unbuffered I/O (recommended for large files).
+    /// 
+    /// Corresponds to `/j` option.
     pub unbuffered: bool,
 
+    /// Copies subdirectories. This option automatically includes empty directories.
+    /// 
+    /// Corresponds to `/e` option.
     pub empty_dir_copy: bool,
+    /// Deletes destination files and directories that no longer exist in the source.
+    /// 
+    /// Corresponds to `/purge` option.
     pub remove_files_and_dirs_not_in_src: bool,
+    /// Copies only the top n levels of the source directory tree.
+    /// 
+    /// Corresponds to `/lev` option.
     pub only_copy_top_n_levels: Option<usize>,
+    /// Creates a directory tree and zero-length files only.
+    /// 
+    /// Corresponds to `/create` option.
     pub structure_and_size_zero_files_only: bool,
     
+    /// Specifies which file properties to copy.
+    /// 
+    /// Corresponds to `/copy` option.
     pub copy_file_properties: Option<FileProperties>,
+    /// Specifies what to copy in directories.
+    /// 
+    /// Corresponds to `/dcopy` option.
     pub copy_dir_properties: Option<DirectoryProperties>,
 
+    /// Specifies the filter options.
     pub filter: Option<Filter<'a>>,
-
+    
+    /// Specifies the file system options.
     pub filesystem_options: Option<FilesystemOptions>,
+    /// Specifies the performance options.
     pub performance_options: Option<PerformanceOptions>,
+    /// Specifies the retry options.
     pub retry_settings: Option<RetrySettings>,
     
+    /// Specifies the logging options.
     pub logging: Option<LoggingOptions<'a>>,
     
+    /// Moves file or directories instead of copy.
     pub mv: Option<Move>,
+    /// Specifies what attributes to add or remove to copied files
     pub post_copy_actions: Option<PostCopyActions>,
 
     /// To use this option empty_dir_copy and PostCopyAction::RMV_FILES_AND_DIRS_NOT_IN_SRC must also be in use

@@ -20,6 +20,7 @@
 //! command.execute()?;
 //! ```
 
+// #![warn(missing_docs)]
 
 pub mod filter;
 pub mod properties;
@@ -27,7 +28,10 @@ pub mod performance;
 pub mod logging;
 pub mod exit_codes;
 
+use std::io;
 use std::{convert::TryInto, ffi::OsString, ops::Add, path::Path, process::Command};
+use std::fmt::Debug;
+use thiserror::Error;
 
 use exit_codes::{OkExitCode, ErrExitCode};
 use filter::Filter;
@@ -332,10 +336,10 @@ impl From<FilesystemOptions> for Vec<OsString> {
 }
 
 
-/// Robocopy command Wrapper
+/// Robocopy command builder
 /// 
 #[derive(Debug, Clone)]
-pub struct RobocopyCommand<'a> {
+pub struct RobocopyCommandBuilder<'a> {
     /// The source's path
     pub source: &'a Path,
     /// The destination's path
@@ -399,9 +403,9 @@ pub struct RobocopyCommand<'a> {
     // todo job options
 }
 
-impl<'a> Default for RobocopyCommand<'a> {
+impl<'a> Default for RobocopyCommandBuilder<'a> {
     fn default() -> Self {
-        RobocopyCommand {
+        RobocopyCommandBuilder {
             source: Path::new("."),
             destination: Path::new("."),
             files: Vec::new(),
@@ -425,9 +429,9 @@ impl<'a> Default for RobocopyCommand<'a> {
     }
 }
 
-impl<'a> RobocopyCommand<'a> {
-    /// Execute the command
-    pub fn execute(&self) -> Result<OkExitCode, Result<ErrExitCode, (&'static str, i8)>>{
+impl<'a> RobocopyCommandBuilder<'a> {
+    /// Build the command
+    pub fn build(&self) -> RobocopyCommand {
         let mut command = Command::new("robocopy");
         
         command
@@ -500,10 +504,53 @@ impl<'a> RobocopyCommand<'a> {
             Into::<Vec<OsString>>::into(actions).into_iter().for_each(|arg| {command.arg(arg);});
         }
 
-        let exit_code = command.status().expect("failed to execute robocopy")
-            .code().expect("Process terminated by signal") as i8;
-        
-        OkExitCode::try_from(exit_code)
+        RobocopyCommand { command }        
     }
 }
 
+/// A enum on error that can occurs during command execution
+#[derive(Error, Debug)]
+pub enum Error {
+    /// An error occured during copy
+    #[error("Error during copy: {0:?}")]
+    ExitCode(ErrExitCode),
+    /// IO error during command spawning
+    #[error("IO error")]
+    IoError(#[from] io::Error)
+}
+
+impl From<ErrExitCode> for Error {
+    fn from(error: ErrExitCode) -> Self {
+        Self::ExitCode(error)
+    }
+}
+
+/// A wrapper around a [Command]
+pub struct RobocopyCommand {
+    command: Command
+}
+
+impl RobocopyCommand {
+    /// Executes the command as a child process, waiting for it to finish and returning its status
+    pub fn execute(&mut self) -> Result<OkExitCode, Error> {
+        let exit_code = self.command.status()?
+        .code().expect("Process terminated by signal") as i8;
+    
+        OkExitCode::try_from(exit_code).map_err(|err| err.into())
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<Command> for RobocopyCommand {
+    /// Converts this robocopy command into a [Command].
+    /// Effectively returning the underlying [Command]
+    fn into(self) -> Command {
+        self.command
+    }
+}
+
+impl Debug for RobocopyCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", format!("{:?}", self.command).replace('\"', ""))
+    }
+}

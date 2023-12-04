@@ -1,7 +1,7 @@
 //! Exit codes
 //! 
  
-use std::convert::TryFrom;
+use std::{convert::TryFrom, fmt::Debug};
 
 /// Success exit codes
 /// 
@@ -34,10 +34,11 @@ pub enum ErrExitCode{
     FAIL_MISMATCHES_EXTRA_FOUND = 14,
     SOME_COPIES_FAIL_MISMATCHES_EXTRA_FOUND = 15,
     NO_CHANGE_FATAL_ERROR = 16,
+    INVALID_EXIT_CODE(i8)
 }
 
 impl TryFrom<i8> for OkExitCode {
-    type Error = Result<ErrExitCode, (&'static str, i8)>;
+    type Error = ErrExitCode;
 
     fn try_from(n: i8) -> Result<Self, Self::Error> {
         if n < 8 {
@@ -57,16 +58,16 @@ impl TryFrom<i8> for OkExitCode {
         } else {
             Err(
                 match n {
-                    8 => Ok(ErrExitCode::FAIL),
-                    9 => Ok(ErrExitCode::SOME_COPIES_FAIL),
-                    10 => Ok(ErrExitCode::FAIL_EXTRA_FOUND),
-                    11 => Ok(ErrExitCode::SOME_COPIES_FAIL_EXTRA_FOUND),
-                    12 => Ok(ErrExitCode::FAIL_MISMATCHES),
-                    13 => Ok(ErrExitCode::SOME_COPIES_FAIL_MISMATCHES),
-                    14 => Ok(ErrExitCode::FAIL_MISMATCHES_EXTRA_FOUND),
-                    15 => Ok(ErrExitCode::SOME_COPIES_FAIL_MISMATCHES_EXTRA_FOUND),
-                    16 => Ok(ErrExitCode::NO_CHANGE_FATAL_ERROR),
-                    c => Err(("Invalid exit code", c)),
+                    8 => ErrExitCode::FAIL,
+                    9 => ErrExitCode::SOME_COPIES_FAIL,
+                    10 => ErrExitCode::FAIL_EXTRA_FOUND,
+                    11 => ErrExitCode::SOME_COPIES_FAIL_EXTRA_FOUND,
+                    12 => ErrExitCode::FAIL_MISMATCHES,
+                    13 => ErrExitCode::SOME_COPIES_FAIL_MISMATCHES,
+                    14 => ErrExitCode::FAIL_MISMATCHES_EXTRA_FOUND,
+                    15 => ErrExitCode::SOME_COPIES_FAIL_MISMATCHES_EXTRA_FOUND,
+                    16 => ErrExitCode::NO_CHANGE_FATAL_ERROR,
+                    c => ErrExitCode::INVALID_EXIT_CODE(c),
                 }
             )
         }

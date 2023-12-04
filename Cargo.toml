@@ -1,6 +1,6 @@
 [package]
 name = "robocopyrs"
-version = "1.1.2"
+version = "1.2.0"
 edition = "2021"
 authors = ["Lucas Ballmer"]
 description = "A wrapper for the robocopy command in Windows"
@@ -10,3 +10,6 @@ repository = "https://github.com/littleTitan/robocopyrs"
 documentation = "https://docs.rs/robocopyrs"
 keywords = ["robocopy", "windows"]
 categories = ["filesystem", "os::windows-apis"]
+
+[dependencies]
+thiserror = "1.0.50"
